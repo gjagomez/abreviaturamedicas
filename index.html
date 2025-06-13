@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juego de Abreviaturas Médicas</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .game-container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            max-width: 600px;
+            width: 90%;
+            text-align: center;
+        }
+        
+        .game-header {
+            margin-bottom: 30px;
+        }
+        
+        .game-title {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        
+        .score-container {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+        }
+        
+        .score-item {
+            text-align: center;
+        }
+        
+        .score-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #28a745;
+        }
+        
+        .score-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .question-container {
+            background: #e3f2fd;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            border-left: 5px solid #2196f3;
+        }
+        
+        .question {
+            font-size: 1.2em;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        .abbreviation {
+            font-size: 3em;
+            font-weight: bold;
+            color: #2196f3;
+            margin: 20px 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .input-container {
+            margin-bottom: 20px;
+        }
+        
+        .answer-input {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1em;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        
+        .answer-input:focus {
+            border-color: #2196f3;
+        }
+        
+        .buttons-container {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            font-size: 1em;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+        
+        .btn-primary {
+            background: #2196f3;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #1976d2;
+            transform: translateY(-2px);
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+        
+        .btn-warning {
+            background: #ffc107;
+            color: #333;
+        }
+        
+        .btn-warning:hover {
+            background: #e0a800;
+            transform: translateY(-2px);
+        }
+        
+        .feedback {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .feedback.correct {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .feedback.incorrect {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .correct-answer {
+            margin-top: 10px;
+            font-style: italic;
+        }
+        
+        .game-over {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        
+        .final-score {
+            font-size: 1.5em;
+            color: #856404;
+            margin-bottom: 15px;
+        }
+        
+        .hint-container {
+            background: #fff8e1;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #ff9800;
+        }
+        
+        .hint {
+            color: #e65100;
+            font-style: italic;
+        }
+        
+        @media (max-width: 600px) {
+            .game-container {
+                padding: 20px;
+            }
+            
+            .game-title {
+                font-size: 2em;
+            }
+            
+            .abbreviation {
+                font-size: 2.5em;
+            }
+            
+            .buttons-container {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <h1 class="game-title">🏥 Abreviaturas Médicas</h1>
+            <div class="score-container">
+                <div class="score-item">
+                    <div class="score-number" id="score">0</div>
+                    <div class="score-label">Puntos</div>
+                </div>
+                <div class="score-item">
+                    <div class="score-number" id="correct">0</div>
+                    <div class="score-label">Correctas</div>
+                </div>
+                <div class="score-item">
+                    <div class="score-number" id="total">0</div>
+                    <div class="score-label">Total</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="question-container" id="questionContainer">
+            <div class="question">¿Qué significa esta abreviatura médica?</div>
+            <div class="abbreviation" id="abbreviation">IC</div>
+            <div class="hint-container" id="hintContainer" style="display: none;">
+                <div class="hint" id="hint"></div>
+            </div>
+            <div class="input-container">
+                <input type="text" class="answer-input" id="answerInput" placeholder="Escribe aquí el significado completo...">
+            </div>
+            <div class="buttons-container">
+                <button class="btn btn-primary" onclick="checkAnswer()">✓ Verificar</button>
+                <button class="btn btn-warning" onclick="showHint()">💡 Pista</button>
+                <button class="btn btn-success" onclick="nextQuestion()">➤ Siguiente</button>
+            </div>
+        </div>
+        
+        <div class="feedback" id="feedback" style="display: none;"></div>
+        
+        <div class="buttons-container">
+            <button class="btn btn-warning" onclick="restartGame()">🔄 Reiniciar Juego</button>
+        </div>
+        
+        <div class="game-over" id="gameOver" style="display: none;">
+            <div class="final-score" id="finalScore"></div>
+            <p>¡Has completado todas las abreviaturas! 🎉</p>
+        </div>
+    </div>
+
+    <script>
+        const abbreviations = {
+            "IC": "Impresión clínica",
+            "HPAF": "Herida por arma de fuego",
+            "HPAB": "Herida por arma blanca",
+            "HRB": "Hiperreactividad bronquial",
+            "BNM": "Bronconeumonía",
+            "EPOC": "Enfermedad pulmonar obstructiva crónica",
+            "ITU": "Infección del tracto urinario",
+            "CA": "Cáncer",
+            "ABS": "Abuso sexual",
+            "NAC": "Neumonía adquirida en comunidad",
+            "PL": "Punción lumbar",
+            "NM": "Neumonía",
+            "DM": "Diabetes mellitus",
+            "IASS": "Infecciones asociadas a los servicios de salud",
+            "TOT": "Tubo orotraqueal",
+            "CVC": "Catéter venoso central",
+            "CVP": "Catéter venoso periférico",
+            "PIC": "Parálisis infantil cerebral",
+            "EMH": "Enfermedad membrana hialina",
+            "CBN": "Cánula binasal",
+            "DHE": "Deshidratación hidroelectrolítica",
+            "EKG": "Electrocardiograma",
+            "MCR": "Mascarilla con reservorio",
+            "DA": "Diarrea",
+            "DPC": "Desnutrición Proteico-calórica",
+            "LME": "Lactancia materna exclusiva",
+            "PAM": "Presión arterial media",
+            "HGIS": "Hemorragia gastrointestinal superior",
+            "ACV": "Accidente cerebrovascular",
+            "TCE": "Trauma cráneo encefálico",
+            "Fx": "Fractura",
+            "Dx": "Diagnóstico",
+            "CAD": "Cetoacidosis diabética",
+            "CCC": "Colecistitis crónica calculosa",
+            "Hb": "Hemoglobina",
+            "Qx": "Quirúrgico",
+            "Tx": "Tratamiento",
+            "Mx": "Medicamentos",
+            "TM": "Traumatología",
+            "CM": "Cirugía de mujeres",
+            "Mc": "Motivo de consulta",
+            "GECA": "Gastroenteritis",
+            "QQSS": "Química sanguínea",
+            "CSTP": "Cesárea segmentada trans peritoneal",
+            "TP": "Tiempo de protrombina",
+            "TPT": "Tiempo parcial de tromboplastina",
+            "MM": "Medicina de mujeres",
+            "CIA": "Cuidado intensivo de adultos",
+            "UCIA": "Unidad de cuidados intensivos de adultos"
+        };
+
+        let currentAbbreviation = '';
+        let currentAnswer = '';
+        let score = 0;
+        let correctCount = 0;
+        let totalCount = 0;
+        let usedAbbreviations = [];
+        let hintUsed = false;
+
+        function getRandomAbbreviation() {
+            const abbrevKeys = Object.keys(abbreviations);
+            const availableAbbrevs = abbrevKeys.filter(abbrev => !usedAbbreviations.includes(abbrev));
+            
+            if (availableAbbrevs.length === 0) {
+                showGameOver();
+                return null;
+            }
+            
+            const randomIndex = Math.floor(Math.random() * availableAbbrevs.length);
+            return availableAbbrevs[randomIndex];
+        }
+
+        function startNewQuestion() {
+            const abbrev = getRandomAbbreviation();
+            if (!abbrev) return;
+            
+            currentAbbreviation = abbrev;
+            currentAnswer = abbreviations[abbrev];
+            hintUsed = false;
+            
+            document.getElementById('abbreviation').textContent = abbrev;
+            document.getElementById('answerInput').value = '';
+            document.getElementById('feedback').style.display = 'none';
+            document.getElementById('hintContainer').style.display = 'none';
+            document.getElementById('answerInput').focus();
+        }
+
+        function normalizeText(text) {
+            return text.toLowerCase()
+                      .replace(/[áàäâã]/g, 'a')
+                      .replace(/[éèëê]/g, 'e')
+                      .replace(/[íìïî]/g, 'i')
+                      .replace(/[óòöôõ]/g, 'o')
+                      .replace(/[úùüû]/g, 'u')
+                      .replace(/ñ/g, 'n')
+                      .replace(/[^\w\s]/g, '')
+                      .trim();
+        }
+
+        function checkAnswer() {
+            const userAnswer = document.getElementById('answerInput').value.trim();
+            const feedbackElement = document.getElementById('feedback');
+            
+            if (!userAnswer) {
+                alert('Por favor, escribe una respuesta');
+                return;
+            }
+            
+            const normalizedUserAnswer = normalizeText(userAnswer);
+            const normalizedCorrectAnswer = normalizeText(currentAnswer);
+            
+            totalCount++;
+            usedAbbreviations.push(currentAbbreviation);
+            
+            if (normalizedUserAnswer === normalizedCorrectAnswer) {
+                correctCount++;
+                score += hintUsed ? 5 : 10; // Menos puntos si usó pista
+                
+                feedbackElement.className = 'feedback correct';
+                feedbackElement.innerHTML = `
+                    <div>¡Correcto! 🎉</div>
+                    <div>+${hintUsed ? 5 : 10} puntos</div>
+                `;
+            } else {
+                feedbackElement.className = 'feedback incorrect';
+                feedbackElement.innerHTML = `
+                    <div>❌ Incorrecto</div>
+                    <div class="correct-answer">La respuesta correcta es: <strong>${currentAnswer}</strong></div>
+                `;
+            }
+            
+            feedbackElement.style.display = 'block';
+            updateScore();
+        }
+
+        function showHint() {
+            if (hintUsed) return;
+            
+            hintUsed = true;
+            const hintContainer = document.getElementById('hintContainer');
+            const hintElement = document.getElementById('hint');
+            
+            // Generar pista basada en la primera letra de cada palabra
+            const words = currentAnswer.split(' ');
+            let hint = '';
+            
+            if (words.length === 1) {
+                hint = `La respuesta tiene ${currentAnswer.length} letras y empieza con "${currentAnswer.charAt(0).toUpperCase()}"`;
+            } else {
+                const firstLetters = words.map(word => word.charAt(0).toUpperCase()).join(', ');
+                hint = `Son ${words.length} palabras que empiezan con: ${firstLetters}`;
+            }
+            
+            hintElement.textContent = `💡 Pista: ${hint}`;
+            hintContainer.style.display = 'block';
+        }
+
+        function nextQuestion() {
+            if (usedAbbreviations.length >= Object.keys(abbreviations).length) {
+                showGameOver();
+                return;
+            }
+            startNewQuestion();
+        }
+
+        function updateScore() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('correct').textContent = correctCount;
+            document.getElementById('total').textContent = totalCount;
+        }
+
+        function showGameOver() {
+            const gameOverElement = document.getElementById('gameOver');
+            const finalScoreElement = document.getElementById('finalScore');
+            const percentage = totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : 0;
+            
+            finalScoreElement.innerHTML = `
+                Puntuación Final: ${score} puntos<br>
+                Precisión: ${correctCount}/${totalCount} (${percentage}%)
+            `;
+            
+            gameOverElement.style.display = 'block';
+            document.getElementById('questionContainer').style.display = 'none';
+        }
+
+        function restartGame() {
+            score = 0;
+            correctCount = 0;
+            totalCount = 0;
+            usedAbbreviations = [];
+            hintUsed = false;
+            
+            document.getElementById('gameOver').style.display = 'none';
+            document.getElementById('questionContainer').style.display = 'block';
+            
+            updateScore();
+            startNewQuestion();
+        }
+
+        // Event listeners
+        document.getElementById('answerInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                checkAnswer();
+            }
+        });
+
+        // Inicializar juego
+        startNewQuestion();
+    </script>
+</body>
+</html>
