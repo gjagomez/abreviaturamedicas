@@ -184,6 +184,7 @@
             padding: 20px;
             border-radius: 10px;
             margin-top: 20px;
+            text-align: left;
         }
         
         .final-score {
@@ -270,9 +271,13 @@
             <button class="btn btn-warning" onclick="restartGame()">🔄 Reiniciar Juego</button>
         </div>
         
-        <div class="game-over" id="gameOver" style="display: none;">
+                <div class="game-over" id="gameOver" style="display: none;">
             <div class="final-score" id="finalScore"></div>
-            <p>¡Has completado todas las abreviaturas! 🎉</p>
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="btn btn-success" onclick="restartGame()" style="font-size: 1.1em; padding: 15px 30px;">
+                    🔄 Jugar de Nuevo
+                </button>
+            </div>
         </div>
     </div>
 
@@ -336,6 +341,7 @@
         let totalCount = 0;
         let usedAbbreviations = [];
         let hintUsed = false;
+        let gameResults = []; // Almacenar resultados de cada pregunta
 
         function getRandomAbbreviation() {
             const abbrevKeys = Object.keys(abbreviations);
@@ -351,18 +357,31 @@
         }
 
         function startNewQuestion() {
+            // Verificar si ya se completaron todas las preguntas
+            if (totalCount >= Object.keys(abbreviations).length) {
+                showGameOver();
+                return;
+            }
+            
             const abbrev = getRandomAbbreviation();
-            if (!abbrev) return;
+            if (!abbrev) {
+                showGameOver();
+                return;
+            }
             
             currentAbbreviation = abbrev;
             currentAnswer = abbreviations[abbrev];
             hintUsed = false;
+            questionAnswered = false; // Resetear para la nueva pregunta
             
             document.getElementById('abbreviation').textContent = abbrev;
             document.getElementById('answerInput').value = '';
             document.getElementById('feedback').style.display = 'none';
             document.getElementById('hintContainer').style.display = 'none';
             document.getElementById('answerInput').focus();
+            
+            // Mostrar progreso
+            document.querySelector('.question').textContent = `¿Qué significa esta abreviatura médica? (${totalCount + 1}/${Object.keys(abbreviations).length})`;
         }
 
         function normalizeText(text) {
@@ -374,7 +393,47 @@
                       .replace(/[úùüû]/g, 'u')
                       .replace(/ñ/g, 'n')
                       .replace(/[^\w\s]/g, '')
+                      .replace(/\s+/g, ' ')
                       .trim();
+        }
+
+        function calculateSimilarity(str1, str2) {
+            const s1 = normalizeText(str1);
+            const s2 = normalizeText(str2);
+            
+            // Si son exactamente iguales
+            if (s1 === s2) return 100;
+            
+            // Calcular distancia de Levenshtein
+            const matrix = [];
+            for (let i = 0; i <= s2.length; i++) {
+                matrix[i] = [i];
+            }
+            for (let j = 0; j <= s1.length; j++) {
+                matrix[0][j] = j;
+            }
+            
+            for (let i = 1; i <= s2.length; i++) {
+                for (let j = 1; j <= s1.length; j++) {
+                    if (s2.charAt(i - 1) === s1.charAt(j - 1)) {
+                        matrix[i][j] = matrix[i - 1][j - 1];
+                    } else {
+                        matrix[i][j] = Math.min(
+                            matrix[i - 1][j - 1] + 1,
+                            matrix[i][j - 1] + 1,
+                            matrix[i - 1][j] + 1
+                        );
+                    }
+                }
+            }
+            
+            const maxLength = Math.max(s1.length, s2.length);
+            return maxLength === 0 ? 100 : Math.round((1 - matrix[s2.length][s1.length] / maxLength) * 100);
+        }
+
+        function isAnswerCorrect(userAnswer, correctAnswer) {
+            const similarity = calculateSimilarity(userAnswer, correctAnswer);
+            return similarity >= 85; // Aceptar respuestas con 85% de similitud o más
         }
 
         function checkAnswer() {
@@ -386,13 +445,33 @@
                 return;
             }
             
-            const normalizedUserAnswer = normalizeText(userAnswer);
-            const normalizedCorrectAnswer = normalizeText(currentAnswer);
+            if (questionAnswered) {
+                alert('Ya respondiste esta pregunta. Haz clic en "Siguiente" para continuar.');
+                return;
+            }
+            
+            const isCorrect = isAnswerCorrect(userAnswer, currentAnswer);
+            const similarity = calculateSimilarity(userAnswer, currentAnswer);
             
             totalCount++;
-            usedAbbreviations.push(currentAbbreviation);
+            questionAnswered = true;
             
-            if (normalizedUserAnswer === normalizedCorrectAnswer) {
+            // Marcar esta abreviatura como usada
+            if (!usedAbbreviations.includes(currentAbbreviation)) {
+                usedAbbreviations.push(currentAbbreviation);
+            }
+            
+            // Guardar resultado para mostrar al final
+            gameResults.push({
+                abbreviation: currentAbbreviation,
+                correctAnswer: currentAnswer,
+                userAnswer: userAnswer,
+                isCorrect: isCorrect,
+                similarity: similarity,
+                hintUsed: hintUsed
+            });
+            
+            if (isCorrect) {
                 correctCount++;
                 score += hintUsed ? 5 : 10; // Menos puntos si usó pista
                 
@@ -400,17 +479,27 @@
                 feedbackElement.innerHTML = `
                     <div>¡Correcto! 🎉</div>
                     <div>+${hintUsed ? 5 : 10} puntos</div>
+                    ${similarity < 100 ? `<div style="font-size: 0.9em; margin-top: 5px;">Similitud: ${similarity}% (aceptado por ortografía)</div>` : ''}
                 `;
             } else {
                 feedbackElement.className = 'feedback incorrect';
                 feedbackElement.innerHTML = `
                     <div>❌ Incorrecto</div>
                     <div class="correct-answer">La respuesta correcta es: <strong>${currentAnswer}</strong></div>
+                    <div style="font-size: 0.9em; margin-top: 5px;">Tu respuesta: "${userAnswer}" (Similitud: ${similarity}%)</div>
                 `;
             }
             
             feedbackElement.style.display = 'block';
             updateScore();
+            
+            // Verificar si se terminaron todas las abreviaturas
+            console.log(`Preguntas respondidas: ${totalCount} de ${Object.keys(abbreviations).length}`);
+            if (totalCount >= Object.keys(abbreviations).length) {
+                setTimeout(() => {
+                    showGameOver();
+                }, 2000); // Esperar 2 segundos para que vea el feedback antes de mostrar resultados
+            }
         }
 
         function showHint() {
@@ -436,10 +525,18 @@
         }
 
         function nextQuestion() {
-            if (usedAbbreviations.length >= Object.keys(abbreviations).length) {
+            // Verificar si ya se respondieron todas las preguntas
+            if (totalCount >= Object.keys(abbreviations).length) {
                 showGameOver();
                 return;
             }
+            
+            // Solo permitir siguiente si ya se respondió la pregunta actual
+            if (!questionAnswered) {
+                alert('Por favor, responde la pregunta actual antes de continuar.');
+                return;
+            }
+            
             startNewQuestion();
         }
 
@@ -454,13 +551,120 @@
             const finalScoreElement = document.getElementById('finalScore');
             const percentage = totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : 0;
             
-            finalScoreElement.innerHTML = `
-                Puntuación Final: ${score} puntos<br>
-                Precisión: ${correctCount}/${totalCount} (${percentage}%)
+            // Crear resumen detallado
+            let resultsHTML = `
+                <div class="final-score">
+                    🎯 JUEGO COMPLETADO 🎯<br>
+                    Puntuación Final: ${score} puntos<br>
+                    Precisión: ${correctCount}/${totalCount} (${percentage}%)<br>
+                    <small>Has completado todas las ${Object.keys(abbreviations).length} abreviaturas médicas</small>
+                </div>
+                <div style="max-height: 500px; overflow-y: auto; margin-top: 20px; border: 1px solid #ddd; border-radius: 8px;">
+                    <h3 style="color: #333; margin-bottom: 15px; padding: 15px; background: #f8f9fa; margin-top: 0; border-radius: 8px 8px 0 0;">📊 Resumen Completo de Resultados</h3>
+                    <div style="padding: 0 15px 15px 15px;">
             `;
             
+            // Separar correctas e incorrectas
+            const correctAnswers = gameResults.filter(r => r.isCorrect);
+            const incorrectAnswers = gameResults.filter(r => !r.isCorrect);
+            
+            // Mostrar estadísticas generales
+            resultsHTML += `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                    <div style="background: #d4edda; padding: 15px; border-radius: 8px; text-align: center;">
+                        <h4 style="color: #155724; margin: 0;">✅ Correctas</h4>
+                        <div style="font-size: 2em; font-weight: bold; color: #28a745;">${correctAnswers.length}</div>
+                    </div>
+                    <div style="background: #f8d7da; padding: 15px; border-radius: 8px; text-align: center;">
+                        <h4 style="color: #721c24; margin: 0;">❌ Incorrectas</h4>
+                        <div style="font-size: 2em; font-weight: bold; color: #dc3545;">${incorrectAnswers.length}</div>
+                    </div>
+                </div>
+            `;
+            
+            // Mostrar respuestas correctas
+            if (correctAnswers.length > 0) {
+                resultsHTML += `
+                    <div style="background: #d4edda; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                        <h4 style="color: #155724; margin-bottom: 15px; border-bottom: 2px solid #c3e6cb; padding-bottom: 8px;">
+                            ✅ RESPUESTAS CORRECTAS (${correctAnswers.length})
+                        </h4>
+                        <div style="display: grid; gap: 10px;">
+                `;
+                
+                correctAnswers.forEach((result, index) => {
+                    const similarityInfo = result.similarity < 100 ? ` (${result.similarity}% similitud)` : '';
+                    const hintInfo = result.hintUsed ? ' 💡' : '';
+                    resultsHTML += `
+                        <div style="padding: 12px; background: rgba(255,255,255,0.8); border-radius: 6px; text-align: left; border-left: 4px solid #28a745;">
+                            <div style="font-weight: bold; color: #155724; font-size: 1.1em;">
+                                ${index + 1}. ${result.abbreviation} → ${result.correctAnswer}${hintInfo}
+                            </div>
+                            ${result.similarity < 100 ? 
+                                `<div style="font-size: 0.9em; color: #666; margin-top: 5px;">
+                                    Tu respuesta: "${result.userAnswer}"${similarityInfo}
+                                </div>` : ''}
+                        </div>
+                    `;
+                });
+                
+                resultsHTML += `</div></div>`;
+            }
+            
+            // Mostrar respuestas incorrectas
+            if (incorrectAnswers.length > 0) {
+                resultsHTML += `
+                    <div style="background: #f8d7da; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                        <h4 style="color: #721c24; margin-bottom: 15px; border-bottom: 2px solid #f5c6cb; padding-bottom: 8px;">
+                            ❌ RESPUESTAS INCORRECTAS (${incorrectAnswers.length})
+                        </h4>
+                        <div style="display: grid; gap: 10px;">
+                `;
+                
+                incorrectAnswers.forEach((result, index) => {
+                    const hintInfo = result.hintUsed ? ' 💡' : '';
+                    resultsHTML += `
+                        <div style="padding: 12px; background: rgba(255,255,255,0.8); border-radius: 6px; text-align: left; border-left: 4px solid #dc3545;">
+                            <div style="font-weight: bold; color: #721c24; font-size: 1.1em;">
+                                ${index + 1}. ${result.abbreviation} → ${result.correctAnswer}${hintInfo}
+                            </div>
+                            <div style="font-size: 0.95em; color: #666; margin-top: 5px;">
+                                <strong>Tu respuesta:</strong> "${result.userAnswer}" 
+                                <span style="color: #dc3545;">(${result.similarity}% similitud)</span>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                resultsHTML += `</div></div>`;
+            }
+            
+            // Mensaje final motivacional
+            let motivationalMessage = '';
+            if (percentage >= 90) {
+                motivationalMessage = '🏆 ¡EXCELENTE! Dominas muy bien las abreviaturas médicas.';
+            } else if (percentage >= 75) {
+                motivationalMessage = '👍 ¡MUY BIEN! Tienes un buen conocimiento de las abreviaturas.';
+            } else if (percentage >= 60) {
+                motivationalMessage = '📚 BIEN. Sigue practicando para mejorar.';
+            } else {
+                motivationalMessage = '💪 Sigue estudiando. ¡La práctica hace al maestro!';
+            }
+            
+            resultsHTML += `
+                    </div>
+                </div>
+                <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-top: 15px; text-align: center;">
+                    <strong style="color: #1976d2; font-size: 1.1em;">${motivationalMessage}</strong>
+                </div>
+            `;
+            
+            finalScoreElement.innerHTML = resultsHTML;
             gameOverElement.style.display = 'block';
             document.getElementById('questionContainer').style.display = 'none';
+            
+            // Ocultar botón "Siguiente" ya que el juego terminó
+            document.querySelector('button[onclick="nextQuestion()"]').style.display = 'none';
         }
 
         function restartGame() {
@@ -468,10 +672,15 @@
             correctCount = 0;
             totalCount = 0;
             usedAbbreviations = [];
+            gameResults = []; // Limpiar resultados
             hintUsed = false;
+            questionAnswered = false; // Resetear también esto
             
             document.getElementById('gameOver').style.display = 'none';
             document.getElementById('questionContainer').style.display = 'block';
+            
+            // Mostrar botón "Siguiente" otra vez
+            document.querySelector('button[onclick="nextQuestion()"]').style.display = 'inline-block';
             
             updateScore();
             startNewQuestion();
