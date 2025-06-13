@@ -261,7 +261,6 @@
             <div class="buttons-container">
                 <button class="btn btn-primary" onclick="checkAnswer()">✓ Verificar</button>
                 <button class="btn btn-warning" onclick="showHint()">💡 Pista</button>
-                <button class="btn btn-success" onclick="nextQuestion()">➤ Siguiente</button>
             </div>
         </div>
         
@@ -446,7 +445,7 @@
             }
             
             if (questionAnswered) {
-                alert('Ya respondiste esta pregunta. Haz clic en "Siguiente" para continuar.');
+                alert('Ya respondiste esta pregunta.');
                 return;
             }
             
@@ -499,6 +498,11 @@
                 setTimeout(() => {
                     showGameOver();
                 }, 2000); // Esperar 2 segundos para que vea el feedback antes de mostrar resultados
+            } else {
+                // Pasar automáticamente a la siguiente pregunta después de 2 segundos
+                setTimeout(() => {
+                    startNewQuestion();
+                }, 2000);
             }
         }
 
@@ -525,19 +529,8 @@
         }
 
         function nextQuestion() {
-            // Verificar si ya se respondieron todas las preguntas
-            if (totalCount >= Object.keys(abbreviations).length) {
-                showGameOver();
-                return;
-            }
-            
-            // Solo permitir siguiente si ya se respondió la pregunta actual
-            if (!questionAnswered) {
-                alert('Por favor, responde la pregunta actual antes de continuar.');
-                return;
-            }
-            
-            startNewQuestion();
+            // Esta función ya no es necesaria pero se mantiene por compatibilidad
+            return;
         }
 
         function updateScore() {
@@ -662,9 +655,6 @@
             finalScoreElement.innerHTML = resultsHTML;
             gameOverElement.style.display = 'block';
             document.getElementById('questionContainer').style.display = 'none';
-            
-            // Ocultar botón "Siguiente" ya que el juego terminó
-            document.querySelector('button[onclick="nextQuestion()"]').style.display = 'none';
         }
 
         function restartGame() {
@@ -678,9 +668,6 @@
             
             document.getElementById('gameOver').style.display = 'none';
             document.getElementById('questionContainer').style.display = 'block';
-            
-            // Mostrar botón "Siguiente" otra vez
-            document.querySelector('button[onclick="nextQuestion()"]').style.display = 'inline-block';
             
             updateScore();
             startNewQuestion();
